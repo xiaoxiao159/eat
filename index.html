@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f3f0e7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="吃饭记">
+<title>吃饭记</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 记录页 ===== -->
+  <section id="page-log" class="page">
+    <header class="app-head">
+      <h1>🍜 吃饭记</h1><span class="sub">记下每一顿</span>
+    </header>
+
+    <form id="compose" class="card compose" autocomplete="off">
+      <div class="meal-chips" id="meal-chips">
+        <button type="button" data-meal="breakfast" class="meal-chip">🍳 早餐</button>
+        <button type="button" data-meal="lunch" class="meal-chip">🍚 午餐</button>
+        <button type="button" data-meal="dinner" class="meal-chip">🍜 晚餐</button>
+        <button type="button" data-meal="snack" class="meal-chip">🍎 加餐</button>
+      </div>
+      <div class="compose-row">
+        <input id="food-input" type="text" placeholder="这顿吃了什么？" maxlength="60" enterkeyhint="done">
+        <button type="button" class="btn-cam" data-action="pick-compose-photo" aria-label="拍照或从图库选图">📷</button>
+        <button type="submit" class="btn-primary">记下</button>
+      </div>
+      <div id="compose-photo" class="compose-photo" hidden>
+        <img id="compose-photo-img" alt="待保存的照片">
+        <button type="button" class="photo-x" data-action="remove-compose-photo" aria-label="移除照片">✕</button>
+      </div>
+    </form>
+
+    <div id="recent" class="recent" hidden>
+      <div class="recent-label">常吃的，点一下直接记：</div>
+      <div class="chips" id="recent-chips"></div>
+    </div>
+
+    <div id="log-list" class="log-list"></div>
+  </section>
+
+  <!-- ===== 菜谱页 ===== -->
+  <section id="page-recipes" class="page" hidden>
+    <div class="card wheel-entry">
+      <div class="wheel-entry-title">🎡 今天吃什么？</div>
+      <div class="wheel-entry-sub">纠结的时候，转一下</div>
+      <div class="wheel-entry-btns">
+        <button type="button" class="btn-primary" data-action="open-wheel" data-cat="breakfast">🍳 转早餐</button>
+        <button type="button" class="btn-primary alt" data-action="open-wheel" data-cat="meal">🍛 转午/晚餐</button>
+      </div>
+    </div>
+
+    <div class="page-head">
+      <h2>📖 菜谱</h2>
+      <button type="button" class="btn-primary sm" data-action="new-recipe">＋ 新增</button>
+    </div>
+    <div class="filters">
+      <button type="button" class="filter-chip active" data-filter="all">全部</button>
+      <button type="button" class="filter-chip" data-filter="breakfast">🍳 早餐</button>
+      <button type="button" class="filter-chip" data-filter="meal">🍛 午餐/晚餐</button>
+    </div>
+    <div id="recipe-list" class="recipe-grid"></div>
+  </section>
+
+  <!-- ===== 统计页 ===== -->
+  <section id="page-stats" class="page" hidden>
+    <div class="page-head">
+      <h2>📊 统计</h2>
+      <div class="segment" id="range-seg">
+        <button type="button" data-range="7" class="active">近7天</button>
+        <button type="button" data-range="30">近30天</button>
+      </div>
+    </div>
+    <div id="stats-body"></div>
+  </section>
+</div>
+
+<!-- 底部导航 -->
+<nav class="nav">
+  <button type="button" class="nav-btn active" data-tab="log"><span class="ico">🍽️</span>记录</button>
+  <button type="button" class="nav-btn" data-tab="recipes"><span class="ico">📖</span>菜谱</button>
+  <button type="button" class="nav-btn" data-tab="stats"><span class="ico">📊</span>统计</button>
+</nav>
+
+<!-- 新增/编辑菜谱 -->
+<div class="overlay" id="recipe-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="modal-title">新增菜谱</h3>
+      <button type="button" class="modal-close" data-action="close-recipe-modal" aria-label="关闭">✕</button>
+    </div>
+    <form id="recipe-form" autocomplete="off">
+      <div class="field">
+        <label for="f-name">菜名</label>
+        <input id="f-name" type="text" maxlength="30" placeholder="比如：西红柿炒鸡蛋">
+      </div>
+      <div class="field">
+        <label>分类</label>
+        <div class="segment" id="f-category">
+          <button type="button" data-cat="breakfast">🍳 早餐</button>
+          <button type="button" data-cat="meal">🍛 午餐/晚餐</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>食材</label>
+        <div id="ing-rows"></div>
+        <button type="button" class="add-ing" data-action="add-ing">＋ 添加食材</button>
+      </div>
+      <div class="field">
+        <label for="f-detail">做法 / 心得</label>
+        <textarea id="f-detail" rows="5" maxlength="2000" placeholder="步骤、火候、小贴士……随便写"></textarea>
+      </div>
+      <div class="field">
+        <label>配图</label>
+        <div class="form-photo">
+          <button type="button" class="photo-pick" data-action="pick-recipe-photo">📷 拍照 / 选图（可选）</button>
+          <div id="recipe-photo-preview" class="photo-preview" hidden>
+            <img id="recipe-photo-img" alt="菜谱配图">
+            <button type="button" class="photo-x" data-action="remove-recipe-photo" aria-label="移除配图">✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" data-action="close-recipe-modal">取消</button>
+        <button type="submit" class="btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 转盘 -->
+<div class="overlay" id="wheel-overlay">
+  <div class="modal-card wheel-card">
+    <div class="modal-head">
+      <h3 id="wheel-title">转一转 🎡</h3>
+      <button type="button" class="modal-close" data-action="close-wheel" aria-label="关闭">✕</button>
+    </div>
+    <div class="wheel-stage">
+      <div class="wheel-pointer" aria-hidden="true"></div>
+      <div class="wheel-spin" id="wheel-spin"><canvas id="wheel-canvas"></canvas></div>
+      <div class="wheel-hub" aria-hidden="true"></div>
+    </div>
+    <div id="wheel-result" class="wheel-result" hidden></div>
+    <div class="wheel-actions">
+      <button type="button" class="btn-primary" id="wheel-go" data-action="wheel-go">开始转 🎡</button>
+    </div>
+  </div>
+</div>
+
+<!-- 看大图 -->
+<div class="overlay lightbox" id="lightbox">
+  <img id="lightbox-img" alt="照片">
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<input type="file" id="compose-file" accept="image/*" hidden>
+<input type="file" id="recipe-file" accept="image/*" hidden>
+
+<script src="app.js"></script>
+</body>
+</html>
