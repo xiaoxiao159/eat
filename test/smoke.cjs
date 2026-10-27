@@ -56,9 +56,13 @@ function defaultMeal(d) {
 }
 
 (async () => {
-  const { srv, port } = await startServer();
-  const base = `http://127.0.0.1:${port}/`;
-  const browser = await chromium.launch({ headless: true });
+  /* 可传入线上地址运行：node test/smoke.cjs https://xxx.github.io/eat/ */
+  const LIVE = process.argv[2] || null;
+  let srv = null;
+  let base = LIVE;
+  if (!LIVE) { const s = await startServer(); srv = s.srv; base = `http://127.0.0.1:${s.port}/`; }
+  const PROXY = process.env.PROXY || null;
+  const browser = await chromium.launch({ headless: true, ...(PROXY ? { proxy: { server: PROXY } } : {}) });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   const page = await ctx.newPage();
 
@@ -365,7 +369,7 @@ function defaultMeal(d) {
 
   /* ============ 汇总 ============ */
   await browser.close();
-  srv.close();
+  if (srv) srv.close();
   console.log(`\n======== 结果：${pass} 通过 / ${fail} 失败 ========`);
   if (fail) { failures.forEach((f) => console.log('  ✗ ' + f)); process.exit(1); }
 })().catch((e) => { console.error('测试脚本异常：', e); process.exit(2); });
